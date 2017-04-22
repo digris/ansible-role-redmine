@@ -1,0 +1,11 @@
+---
+
+# https://github.com/gjroelofs/redmine_codemirror
+- name: get redmine_codemirror from github
+  git: repo=https://github.com/gjroelofs/redmine_codemirror.git
+        dest='{{ redmine_base_dir }}/plugins/redmine_codemirror'
+        version=master
+        force=yes
+  become: yes
+  become_user: '{{ redmine_user }}'
+

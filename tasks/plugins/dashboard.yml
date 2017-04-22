@@ -1,0 +1,29 @@
+---
+
+# https://github.com/jgraichen/redmine_dashboard/tree/stable-v2
+- name: get redmine_dashboard (2) from github
+  git: repo=https://github.com/jgraichen/redmine_dashboard.git
+        dest='{{ redmine_base_dir }}/plugins/redmine_dashboard'
+        version=stable-v2
+        force=yes
+  become: yes
+  become_user: '{{ redmine_user }}'
+
+
+- name: bundle install
+  bundler: state=present
+           exclude_groups=development,test
+           chdir={{ redmine_base_dir }}
+           gem_path={{ redmine_user_home_dir }}/.gems
+  become: yes
+  become_user: '{{ redmine_user }}'
+
+#- name: run db:migrate (dashboard)
+#  command: >
+#    bundle exec rake redmine:plugins:migrate RAILS_ENV=production NAME=redmine_git_hosting
+#    chdir=/srv/redmine
+#  environment:
+#      RAILS_ENV: production
+#  become: yes
+#  become_user: '{{ redmine_user }}'
+

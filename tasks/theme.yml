@@ -1,0 +1,14 @@
+
+- name: add & extract theme
+  unarchive:
+    src: theme/digris-theme.tgz
+    dest: '{{ redmine_base_dir }}/public/themes'
+    owner: '{{ redmine_user }}'
+    group: '{{ redmine_group }}'
+
+- name: add favicon
+  copy:
+    src: theme/favicon.ico
+    dest: '{{ redmine_base_dir }}/public/favicon.ico'
+    owner: '{{ redmine_user }}'
+    group: '{{ redmine_group }}'

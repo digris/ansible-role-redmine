@@ -1,0 +1,69 @@
+---
+
+##
+# users, groups & directories
+redmine_base_dir: /srv/redmine
+redmine_log_dir: /var/log/redmine
+
+redmine_user: redmine
+redmine_group: redmine
+redmine_user_home_dir: /home/redmine
+
+redmine_gitolite_user: git
+redmine_gitolite_user_home_dir: /home/git
+
+redmine_hostname: 'redmine.example.com'
+
+
+##
+# redmine & plugin versions (check versions on github)
+#  - https://github.com/redmine/redmine
+#  - https://github.com/jbox-web/redmine_bootstrap_kit
+#  - https://github.com/jbox-web/redmine_git_hosting
+redmine_version: 3.3.2
+redmine_bootstrap_kit_version: 0.2.5
+redmine_git_hosting_version: 1.2.1 # ATTENTION: 1.2.2 is broken! https://github.com/jbox-web/redmine_git_hosting/issues/642
+
+
+##
+# database
+redmine_database_host: localhost
+redmine_database_name: redmine
+redmine_database_user: redmine
+redmine_database_password: redmine
+
+
+##
+# files & directories
+redmine_attachments_path: /data/redmine/files
+
+
+##
+# authentication (imap)
+redmine_imap_auth_enable: true
+redmine_imap_auth_hostname: imap.example.com
+redmine_imap_auth_domain: example.com
+
+
+##
+# email configuration (incoming)
+redmine_incoming_email_host: smtp.example.com
+redmine_incoming_email_port: 143
+redmine_incoming_email_username: redmine@example.com
+redmine_incoming_email_password: '****************'
+redmine_incoming_email_ssl: false
+redmine_incoming_email_starttls: false
+redmine_incoming_email_default_project: 'support'
+redmine_incoming_email_default_tracker: 'bug'
+redmine_incoming_email_allow_override: 'tracker,project,priority'
+redmine_incoming_email_unknown_user: 'create'
+
+
+##
+# email configuration (outgoing)
+redmine_outgoing_email_host: '{{ redmine_incoming_email_host }}'
+redmine_outgoing_email_port: 25
+redmine_outgoing_email_username: '{{ redmine_incoming_email_username }}'
+redmine_outgoing_email_password: '{{ redmine_incoming_email_password }}'
+redmine_outgoing_email_starttls: '{{ redmine_incoming_email_starttls }}'
+redmine_outgoing_email_openssl_verify_mode: 'none'

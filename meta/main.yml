@@ -1,0 +1,17 @@
+galaxy_info:
+  author: Jonas Ohrstrom
+  description: Redmine Server
+  company: Digris AG
+  license: BSD
+  min_ansible_version: 2.0
+  github_branch: master
+  platforms:
+  - name: Debian
+    versions:
+    - jessie
+  categories:
+  - system
+
+  galaxy_tags: ['server']
+
+dependencies: []

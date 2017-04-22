@@ -1,0 +1,133 @@
+---
+
+
+# users & groups
+- name: redmine - create redmine group
+  group: name={{ redmine_group }} state=present
+
+- name: redmine - create redmine user
+  user: name={{ redmine_user }}
+        shell=/bin/bash
+        home={{ redmine_user_home_dir }}
+        group={{ redmine_group }}
+
+# directories & files
+- name: redmine - create log directory
+  file: path='{{ redmine_log_dir }}'
+        state=directory
+        owner={{ redmine_user }} group={{ redmine_group }}
+
+- name: redmine - create log directory
+  file: path='{{ redmine_base_dir }}'
+        state=directory
+        owner={{ redmine_user }} group={{ redmine_group }}
+
+# create media directories
+- name: redmine - create attachments directory
+  file: path='{{ redmine_attachments_path }}'
+        state=directory
+        owner={{ redmine_user }} group={{ redmine_group }}
+
+- name: redmine - get code from github
+  git: repo=https://github.com/redmine/redmine.git
+        dest='{{ redmine_base_dir }}'
+
+        version={{ redmine_version }}
+        force=yes
+  become: yes
+  become_user: '{{ redmine_user }}'
+  ignore_errors: yes
+
+# this is needed for bundler task
+- name: redmine - add database config
+  template:
+    src: database.yml
+    dest: "{{ redmine_base_dir }}/config/database.yml"
+    owner: '{{ redmine_user }}'
+    group: '{{ redmine_group }}'
+
+# additional gems
+- name: redmine - add Gemfile.local
+  template:
+    src: Gemfile.local
+    dest: "{{ redmine_base_dir }}/Gemfile.local"
+    owner: '{{ redmine_user }}'
+    group: '{{ redmine_group }}'
+
+
+# incoming email scheduler
+- name: redmine - add configuration.yml
+  template:
+    src: configuration.yml
+    dest: "{{ redmine_base_dir }}/config/configuration.yml"
+    owner: '{{ redmine_user }}'
+    group: '{{ redmine_group }}'
+
+
+# incoming email scheduler
+- name: redmine - add scheduler initializer for incoming emails
+  template:
+    src: incoming_email_initializer.rb
+    dest: "{{ redmine_base_dir }}/config/initializers/incoming_email.rb"
+    owner: '{{ redmine_user }}'
+    group: '{{ redmine_group }}'
+
+
+#- name: bundle install
+#  bundler: state=present
+#           exclude_groups=development,test
+#           chdir={{ redmine_base_dir }}
+#           gem_path={{ redmine_user_home_dir }}/vendor/bundle/
+#  become: yes
+#  become_user: '{{ redmine_user }}'
+
+
+- name: redmine - bundle install
+  bundler: state=present
+           exclude_groups=development,test
+           chdir={{ redmine_base_dir }}
+           gem_path={{ redmine_user_home_dir }}/.gems
+  become: yes
+  become_user: '{{ redmine_user }}'
+
+
+- name: redmine - run db:migrate
+  command: >
+    bundle exec rake db:migrate
+    chdir=/srv/redmine
+  environment:
+      RAILS_ENV: production
+  become: yes
+  become_user: redmine
+
+
+- name: redmine - load database default data set
+  command: >
+    bundle exec rake redmine:load_default_data RAILS_ENV=production REDMINE_LANG=en
+    chdir=/srv/redmine
+  environment:
+      RAILS_ENV: production
+      REDMINE_LANG: en
+  become: yes
+  become_user: redmine
+  ignore_errors: yes
+
+
+- name: redmine - generate secret_token
+  command: >
+    bundle exec rake generate_secret_token
+    chdir=/srv/redmine
+  environment:
+      RAILS_ENV: production
+  become: yes
+  become_user: '{{ redmine_user }}'
+
+
+- name: redmine - add supervisord config
+  template: src=redmine.supervisord.conf
+            dest=/etc/supervisor/conf.d/redmine.supervised.conf
+
+
+- name: redmine - restart supervisord processes
+  supervisorctl: name=redmine state=restarted
+  ignore_errors: yes

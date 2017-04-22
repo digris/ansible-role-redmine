@@ -1,0 +1,74 @@
+---
+
+##
+# install gitolite(3)
+
+# packages
+- name: gitolite - install gitolite3
+  apt: pkg=gitolite3 state=present
+
+- name: gitolite - create gitolite user
+  user: name={{ redmine_gitolite_user }}
+        shell=/bin/bash
+        home={{ redmine_gitolite_user_home_dir }}
+
+- name: gitolite - copy git hosting ssh (pub) key
+  command: >
+    cp '{{ redmine_base_dir }}/ssh_keys/redmine_gitolite_admin_id_rsa.pub' '{{ redmine_gitolite_user_home_dir }}/redmine_gitolite_admin_id_rsa.pub'
+  become: yes
+
+
+- name: gitolite - permissions for ssh (pub) key
+  file: path='{{ redmine_gitolite_user_home_dir }}/redmine_gitolite_admin_id_rsa.pub'
+        owner={{ redmine_gitolite_user }}
+  become: yes
+
+
+- name: gitolite - add .profile
+  template: src=gitolite_profile
+            dest='{{ redmine_gitolite_user_home_dir }}/.profile'
+
+- name: gitolite - create bin directory
+  file: path='{{ redmine_gitolite_user_home_dir }}/bin'
+        state=directory
+        owner={{ redmine_gitolite_user }}
+
+
+
+- name: gitolite - get gitolite from github
+  git: repo=https://github.com/sitaramc/gitolite.git
+        dest='{{ redmine_gitolite_user_home_dir }}/gitolite'
+        version=v3.6.6
+  become: yes
+  become_user: '{{ redmine_gitolite_user }}'
+
+
+
+
+- name: gitolite - gitolite install
+  shell: gitolite/install -to '{{ redmine_gitolite_user_home_dir }}/bin'
+  args:
+    chdir: '{{ redmine_gitolite_user_home_dir }}'
+  become: yes
+  become_user: '{{ redmine_gitolite_user }}'
+
+
+- name: gitolite - gitolite setup
+  shell: . ~/.profile && gitolite setup -pk redmine_gitolite_admin_id_rsa.pub
+  args:
+    chdir: '{{ redmine_gitolite_user_home_dir }}'
+  become: yes
+  become_user: '{{ redmine_gitolite_user }}'
+
+- name: gitolite - add gitolite.rc
+  template:
+    src: gitolite.rc
+    dest: "{{ redmine_gitolite_user_home_dir }}/.gitolite.rc"
+    owner: '{{ redmine_gitolite_user }}'
+
+- name: gitolite - add /etc/sudoers.d/redmine
+  template:
+    src: sudoers.d_redmine
+    dest: /etc/sudoers.d/redmine
+    mode: 0440
+

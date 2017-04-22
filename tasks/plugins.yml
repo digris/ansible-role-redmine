@@ -1,0 +1,21 @@
+---
+
+#- include: plugins/home-redirector.yml
+#  tags: plugin-home-redirector
+#  become: yes
+#  notify: restart redmine
+
+- include: plugins/codemirror.yml
+  tags: plugin-codemirror
+  become: yes
+  notify: restart redmine
+
+- include: plugins/dashboard.yml
+  tags: plugin-dashboard
+  become: yes
+  notify: restart redmine
+
+- include: plugins/auth-imap.yml
+  tags: plugin-auth-imap
+  become: yes
+  notify: restart redmine

@@ -1,0 +1,11 @@
+---
+
+##
+# add imap auth backend
+
+- name: add auth_source_imap.rb to models
+  template:
+    src: auth_source_imap.rb
+    dest: '{{ redmine_base_dir }}/app/models/auth_source_imap.rb'
+    owner: '{{ redmine_user }}'
+    group: '{{ redmine_group }}'

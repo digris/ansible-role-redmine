@@ -1,0 +1,57 @@
+---
+
+- name: add nginx repository key
+  apt_key: url=http://nginx.org/keys/nginx_signing.key state=present
+
+- name: add nginx repository
+  apt_repository: repo='deb http://nginx.org/packages/mainline/debian/ {{ ansible_distribution_release }} nginx' state=present
+
+- name: add nginx src repository
+  apt_repository: repo='deb-src http://nginx.org/packages/mainline/debian/ {{ ansible_distribution_release }} nginx' state=present
+
+- name: ensure apt cache is up to date
+  apt: update_cache=yes cache_valid_time=3600
+
+- name: ensure packages are installed
+  apt: name=nginx state=latest
+
+- name: install nginx config file
+  template:
+    src: nginx.conf
+    dest: "/etc/nginx/conf.d/{{ redmine_hostname }}.conf"
+
+- name: install nginx ssl config file
+  template:
+    src: nginx-ssl.conf
+    dest: "/etc/nginx/conf.d/ssl.conf"
+
+- name: delete default.conf
+  file:
+    state: absent
+    path: "/etc/nginx/conf.d/default.conf"
+
+- name: delete default index.nginx-debian.html
+  file:
+    state: absent
+    path: "/var/www/html/index.nginx-debian.html"
+
+- name: delete default index.html
+  file:
+    state: absent
+    path: "/var/www/html/index.html"
+
+- name: create ssl directory
+  file: path=/etc/ssl/
+        state=directory
+
+- name: check if dhparam.pem exists
+  stat: path=/etc/ssl/dhparam.pem
+  register: dhparam_file
+
+- name: generate dhparam.pem (could take a while)
+  command: openssl dhparam 4096 -out /etc/ssl/dhparam.pem
+  when: dhparam_file.stat.exists == False
+
+
+- name: restart nginx
+  service: name=nginx state=restarted

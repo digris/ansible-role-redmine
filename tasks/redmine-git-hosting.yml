@@ -1,0 +1,73 @@
+---
+
+##
+# http://redmine-git-hosting.io/get_started/
+
+# packages
+- name: git hosting plugin - ensure redmine-git-hosting dependencies are installed
+  apt: "pkg={{ item }} state=present"
+  with_items:
+    - build-essential
+    - libssh2-1
+    - libssh2-1-dev
+    - libgpg-error-dev
+    - libicu-dev
+    - cmake
+  changed_when: False
+
+
+# get Bootstrap Kit
+- name: git hosting plugin - get bootstrap kit from github
+  git: repo=https://github.com/jbox-web/redmine_bootstrap_kit.git
+        dest='{{ redmine_base_dir }}/plugins/redmine_bootstrap_kit'
+        version={{ redmine_bootstrap_kit_version }}
+        force=yes
+  become: yes
+  become_user: '{{ redmine_user }}'
+
+
+# get git hosting plugin
+- name: git hosting plugin - get git hosting plugin from github
+  git: repo=https://github.com/jbox-web/redmine_git_hosting.git
+        dest='{{ redmine_base_dir }}/plugins/redmine_git_hosting'
+        version={{ redmine_git_hosting_version }}
+        force=yes
+  become: yes
+  become_user: '{{ redmine_user }}'
+
+
+
+- name: git hosting plugin - bundle install (git hosting)
+  bundler: state=present
+           exclude_groups=development,test
+           chdir={{ redmine_base_dir }}
+           gem_path={{ redmine_user_home_dir }}/.gems
+  become: yes
+  become_user: '{{ redmine_user }}'
+
+
+- name: git hosting plugin - run db:migrate (git hosting)
+  command: >
+    bundle exec rake redmine:plugins:migrate RAILS_ENV=production NAME=redmine_git_hosting
+    chdir=/srv/redmine
+  environment:
+      RAILS_ENV: production
+      NAME: redmine_git_hosting
+  become: yes
+  become_user: '{{ redmine_user }}'
+
+##
+# Create SSH Keys for user running Redmine
+
+- name: git hosting plugin - create ssh key directory
+  file: path='{{ redmine_base_dir }}/ssh_keys'
+        state=directory
+        owner={{ redmine_user }} group={{ redmine_group }}
+
+- name: git hosting plugin - generate ssh keys
+  command: >
+    ssh-keygen -N '' -f ssh_keys/redmine_gitolite_admin_id_rsa
+    chdir={{ redmine_base_dir }}
+  become: yes
+  become_user: '{{ redmine_user }}'
+  ignore_errors: yes

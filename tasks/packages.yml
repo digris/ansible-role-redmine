@@ -1,0 +1,46 @@
+---
+
+- name: packages - update apt cache
+  apt: update_cache=yes cache_valid_time=3600
+  tags: tools
+
+- name: packages - install git
+  apt: pkg=git state=present
+
+- name: packages - install imagemagick
+  apt: pkg=imagemagick state=present
+
+- name: packages - install libmagickwand-dev
+  apt: pkg=libmagickwand-dev state=present
+
+- name: packages - install supervisor
+  apt: pkg=supervisor state=present
+
+- name: packages - install build-essential
+  apt: pkg=build-essential state=present
+
+- name: packages - install ruby-dev
+  apt: pkg=ruby-dev state=present
+
+- name: packages - install rubygems
+  apt: pkg=rubygems state=present
+
+- name: packages - install ruby-rmagick
+  apt: pkg=ruby-rmagick state=present
+
+- name: packages - install memcached
+  apt: pkg=memcached state=present
+
+- name: packages - install bundler (gem)
+  gem: name=bundler state=present
+
+- name: packages - install puma (gem)
+  gem: name=puma state=present
+
+- name: packages - install bundler (command)
+  command: >
+    gem install bundler
+
+- name: packages - install puma (command)
+  command: >
+    gem install puma

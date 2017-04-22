@@ -1,0 +1,34 @@
+---
+
+- include: postgresql.yml
+  tags: database
+  become: yes
+
+- include: packages.yml
+  tags: packages
+  become: yes
+
+- include: redmine.yml
+  tags: redmine
+  become: yes
+
+- include: redmine-git-hosting.yml
+  tags: redmine-git-hosting
+  become: yes
+
+- include: gitolite.yml
+  tags: gitolite
+  become: yes
+
+- include: plugins.yml
+  tags: plugins
+  become: yes
+
+- include: theme.yml
+  tags: theme
+  become: yes
+
+- include: nginx.yml
+  tags: nginx
+  become: yes
+

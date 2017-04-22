@@ -1,0 +1,11 @@
+---
+
+# https://github.com/jmlagace/redmine_home_page_redirector
+- name: get redmine_home_page_redirector from github
+  git: repo=https://github.com/jmlagace/redmine_home_page_redirector.git
+        dest='{{ redmine_base_dir }}/plugins/redmine_home_page_redirector'
+        version=0.0.1
+        force=yes
+  become: yes
+  become_user: '{{ redmine_user }}'
+

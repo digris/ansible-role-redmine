@@ -1,0 +1,39 @@
+# configuration variables for gitolite
+
+%RC = (
+    UMASK                           =>  0077,
+    GIT_CONFIG_KEYS                 =>  '.*',
+    LOG_EXTRA                       =>  1,
+    ROLES => {
+        READERS                     =>  1,
+        WRITERS                     =>  1,
+    },
+    LOCAL_CODE                =>  "$ENV{HOME}/local",
+    ENABLE => [
+        'help',
+        'desc',
+        'info',
+        'perms',
+        'writable',
+
+        # Uncomment or add new commands here.
+        # 'create',
+        # 'fork',
+        # 'mirror',
+        # 'readme',
+        # 'sskm',
+        # 'D',
+
+        'ssh-authkeys',
+        'git-config',
+        'daemon',
+        'gitweb',
+    ],
+);
+
+1;
+
+# Local variables:
+# mode: perl
+# End:
+# vim: set syn=perl:

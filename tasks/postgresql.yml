@@ -1,0 +1,27 @@
+---
+
+- name: postgres - ensure apt cache is up to date
+  apt: update_cache=yes cache_valid_time=3600
+
+- name: ensure packages are installed
+  apt: name={{item}} state=present
+  with_items:
+      - postgresql
+      - libpq-dev
+      - python-psycopg2
+
+- name: postgres - ensure database exists
+  postgresql_db: name={{ redmine_database_name }}
+  become_user: postgres
+
+- name: postgres - ensure user has access to database
+  postgresql_user: db={{ redmine_database_name }} name={{ redmine_database_user }} password={{ redmine_database_password }} priv=ALL
+  become_user: postgres
+
+- name: postgres - ensure user does not have unnecessary privilege
+  postgresql_user: name={{ redmine_database_user }} role_attr_flags=NOSUPERUSER
+  become_user: postgres
+
+- name: postgres - ensure no other user can access the database
+  postgresql_privs: db={{ redmine_database_name }} role=PUBLIC type=database priv=ALL state=absent
+  become_user: postgres
