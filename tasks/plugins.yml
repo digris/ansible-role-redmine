@@ -19,3 +19,8 @@
   tags: plugin-auth-imap
   become: yes
   notify: restart redmine
+
+- include: plugins/telegram.yml
+  tags: plugin-telegram
+  become: yes
+  notify: restart redmine

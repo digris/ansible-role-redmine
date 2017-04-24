@@ -1,6 +1,14 @@
 ---
 
-
 - name: restart redmine
-  supervisorctl: name=redmine state=restarted
+  supervisorctl: name='redmine:' state=restarted
+
+- name: restart telegram
+  supervisorctl: name='telegram:' state=restarted
+
+- name: restart redmine chat bot
+  service: name=redmine-chat-bot state=restarted
+
+- name: restart redmine intouch bot
+  service: name=redmine-intouch-bot state=restarted
 

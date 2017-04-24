@@ -22,8 +22,10 @@
 - name: packages - install ruby-dev
   apt: pkg=ruby-dev state=present
 
-- name: packages - install rubygems
-  apt: pkg=rubygems state=present
+##
+# ruby installed from source - as we need v2.3
+#- name: packages - install rubygems
+#  apt: pkg=rubygems state=present
 
 - name: packages - install ruby-rmagick
   apt: pkg=ruby-rmagick state=present
@@ -31,11 +33,8 @@
 - name: packages - install memcached
   apt: pkg=memcached state=present
 
-- name: packages - install bundler (gem)
-  gem: name=bundler state=present
-
-- name: packages - install puma (gem)
-  gem: name=puma state=present
+- name: install redis-server
+  apt: pkg=redis-server state=present
 
 - name: packages - install bundler (command)
   command: >

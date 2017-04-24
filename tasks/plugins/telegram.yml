@@ -1,0 +1,190 @@
+---
+
+- name: install libreadline-dev
+  apt: pkg=libreadline-dev state=present
+
+- name: install libconfig-dev
+  apt: pkg=libconfig-dev state=present
+
+- name: install libssl-dev
+  apt: pkg=libssl-dev state=present
+
+- name: install libevent-dev
+  apt: pkg=libevent-dev state=present
+
+- name: install libjansson-dev
+  apt: pkg=libjansson-dev state=present
+
+- name: install libpython-dev
+  apt: pkg=libpython-dev state=present
+
+- name: install liblua5.2-dev
+  apt: pkg=liblua5.2-dev state=present
+
+- name: install lua5.2
+  apt: pkg=lua5.2 state=present
+
+- name: create workspace directory
+  file: path=/root/src state=directory
+
+###
+##  1.4.* version has problems with redmine_chat_telegram
+## https://github.com/centosadmin/redmine_chat_telegram
+## so use 1.3.1 or 1.3.3 for the moment
+#- name: Chekout telegram-cli repository from github
+#  git: repo=https://github.com/vysheng/tg.git
+#       version=1.3.1
+#       dest=/root/src/tg
+#       accept_hostkey=yes
+#       force=yes
+#  register: tg_repo
+#
+#
+
+##
+# patch needed:
+# https://github.com/vysheng/tg/issues/904
+#
+
+##
+#- name: build telegram-cli
+#  command: "{{ item }} chdir=/root/src/tg"
+#  with_items:
+#    - ./configure
+#    - make clean
+#    - make
+#  when: tg_repo.changed
+#
+#
+#- name: install (copy binary)
+#  command: cp -p /root/src/tg/bin/telegram-cli /usr/local/bin/telegram-cli
+#  ignore_errors: yes
+#  when: tg_repo.changed
+
+
+# server key file
+# /etc/telegram-cli/server.pub
+
+- name: make sure /etc/telegram-cli directory exists
+  file: path=/etc/telegram-cli
+        state=directory
+
+- name: copy server.pup
+  command: cp -p /root/src/tg/server.pub /etc/telegram-cli/server.pub
+
+
+
+
+# get redmine_telegram_common
+# https://github.com/centosadmin/redmine_telegram_common
+- name: get redmine_telegram_common from github
+  git: repo=https://github.com/centosadmin/redmine_telegram_common.git
+        dest='{{ redmine_base_dir }}/plugins/redmine_telegram_common'
+        version=master
+        force=yes
+  become: yes
+  become_user: '{{ redmine_user }}'
+
+
+# get redmine_chat_telegram
+# https://github.com/centosadmin/redmine_chat_telegram
+- name: get redmine_chat_telegram from github
+  git: repo=https://github.com/centosadmin/redmine_chat_telegram.git
+        dest='{{ redmine_base_dir }}/plugins/redmine_chat_telegram'
+        version=master
+        force=yes
+  become: yes
+  become_user: '{{ redmine_user }}'
+
+
+# get redmine_intouch
+# https://github.com/centosadmin/redmine_intouch
+- name: get redmine_intouch from github
+  git: repo=https://github.com/centosadmin/redmine_intouch.git
+        dest='{{ redmine_base_dir }}/plugins/redmine_intouch'
+        version=master
+        force=yes
+  become: yes
+  become_user: '{{ redmine_user }}'
+
+
+# add redmine_chat_telegram config
+- name: add redmine_chat_telegram config
+  template:
+    src: plugins/telegram/telegram.yml
+    dest: "{{ redmine_base_dir }}/plugins/redmine_chat_telegram/config/telegram.yml"
+
+
+
+- name: bundle install
+  bundler: state=present
+           exclude_groups=development,test
+           chdir={{ redmine_base_dir }}
+           gem_path={{ redmine_user_home_dir }}/.gems
+  become: yes
+  become_user: '{{ redmine_user }}'
+
+
+- name: run db:migrate (redmine_telegram_common)
+  command: >
+    bundle exec rake redmine:plugins:migrate RAILS_ENV=production NAME=redmine_telegram_common
+    chdir=/srv/redmine
+  environment:
+      RAILS_ENV: production
+      NAME: redmine_telegram_common
+  become: yes
+  become_user: '{{ redmine_user }}'
+
+
+- name: run db:migrate (redmine_chat_telegram)
+  command: >
+    bundle exec rake redmine:plugins:migrate RAILS_ENV=production NAME=redmine_chat_telegram
+    chdir=/srv/redmine
+  environment:
+      RAILS_ENV: production
+      NAME: redmine_chat_telegram
+  become: yes
+  become_user: '{{ redmine_user }}'
+
+
+- name: run db:migrate (redmine_intouch)
+  command: >
+    bundle exec rake redmine:plugins:migrate RAILS_ENV=production NAME=redmine_intouch
+    chdir=/srv/redmine
+  environment:
+      RAILS_ENV: production
+      NAME: redmine_intouch
+  become: yes
+  become_user: '{{ redmine_user }}'
+
+
+
+# add intouch-bot init.d script
+- name: add intouch-bot-init-d script
+  template:
+    src: plugins/telegram/intouch-bot-init-d.j2
+    dest: "/etc/init.d/redmine-intouch-bot"
+    mode: '0755'
+
+
+# add chat-bot init.d script
+- name: add chat-bot-init-d script
+  template:
+    src: plugins/telegram/chat-bot-init-d.j2
+    dest: "/etc/init.d/redmine-chat-bot"
+    mode: '0755'
+
+
+- name: add supervisord config (telegram)
+  template: src=plugins/telegram/telegram.supervisord.conf
+            dest=/etc/supervisor/conf.d/telegram.supervised.conf
+
+- name: enable supervisord config (telegram)
+  supervisorctl: name='telegram:' state=present
+
+- name: notify
+  command: /bin/true
+  notify:
+    - restart telegram
+    - restart redmine chat bot
+    - restart redmine intouch bot

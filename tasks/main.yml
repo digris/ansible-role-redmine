@@ -4,12 +4,16 @@
   tags: database
   become: yes
 
+- include: install-ruby.yml
+  tags: install-ruby
+  become: yes
+
 - include: packages.yml
   tags: packages
   become: yes
 
 - include: redmine.yml
-  tags: redmine
+  tags: install-redmine
   become: yes
 
 - include: redmine-git-hosting.yml

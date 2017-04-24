@@ -1,0 +1,61 @@
+---
+
+- name: install zlib1g-dev
+  apt: pkg=zlib1g-dev state=present
+
+- name: install libssl-dev
+  apt: pkg=libssl-dev state=present
+
+- name: install libreadline-dev
+  apt: pkg=libreadline-dev state=present
+
+- name: install libgdbm-dev
+  apt: pkg=libgdbm-dev state=present
+
+- name: install openssl
+  apt: pkg=openssl state=present
+
+
+
+- name: create workspace directory
+  file: path=/root/src state=directory
+
+- name: download ruby source
+  unarchive:
+    src: '{{ ruby_download_url }}'
+    dest: /root/src
+    remote_src: True
+  register: ruby_src
+
+#- name: Chekout fdk-aac repository from github
+#  git: repo={{ encoder_fdk_aac_repository }}
+#       version={{ encoder_fdk_aac_repository_version }}
+#       dest={{ encoder_fdk_aac_build_dir }}
+#       accept_hostkey=yes
+#       force=yes
+#  register: fdk_aac_repo
+#
+- name: build ruby
+  command: "{{ item }} chdir=/root/src/ruby-{{ ruby_version }}"
+  with_items:
+    - ./configure
+    - make
+  # when: ruby_src.changed
+#
+- name: build ruby
+  command: >
+    make install
+    chdir="/root/src/ruby-{{ ruby_version }}"
+  become: yes
+  become_user: root
+#  when: fdk_aac_repo.changed
+#
+###
+## without ldconfig the odr-audioenc complains: "error while loading shared libraries"
+#- name: ldconfig
+#  command: >
+#    ldconfig
+#    chdir={{ encoder_fdk_aac_build_dir  }}
+#  become: yes
+#  become_user: root
+#  when: fdk_aac_repo.changed

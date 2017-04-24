@@ -67,3 +67,9 @@ redmine_outgoing_email_username: '{{ redmine_incoming_email_username }}'
 redmine_outgoing_email_password: '{{ redmine_incoming_email_password }}'
 redmine_outgoing_email_starttls: '{{ redmine_incoming_email_starttls }}'
 redmine_outgoing_email_openssl_verify_mode: 'none'
+
+
+##
+# ruby
+ruby_download_url: https://cache.ruby-lang.org/pub/ruby/2.3/ruby-2.3.4.tar.gz
+ruby_version: 2.3.4

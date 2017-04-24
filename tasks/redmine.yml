@@ -2,33 +2,33 @@
 
 
 # users & groups
-- name: redmine - create redmine group
+- name: create redmine group
   group: name={{ redmine_group }} state=present
 
-- name: redmine - create redmine user
+- name: create redmine user
   user: name={{ redmine_user }}
         shell=/bin/bash
         home={{ redmine_user_home_dir }}
         group={{ redmine_group }}
 
 # directories & files
-- name: redmine - create log directory
+- name: create log directory
   file: path='{{ redmine_log_dir }}'
         state=directory
         owner={{ redmine_user }} group={{ redmine_group }}
 
-- name: redmine - create log directory
+- name: create app directory
   file: path='{{ redmine_base_dir }}'
         state=directory
         owner={{ redmine_user }} group={{ redmine_group }}
 
 # create media directories
-- name: redmine - create attachments directory
+- name: create attachments directory
   file: path='{{ redmine_attachments_path }}'
         state=directory
         owner={{ redmine_user }} group={{ redmine_group }}
 
-- name: redmine - get code from github
+- name: get code from github
   git: repo=https://github.com/redmine/redmine.git
         dest='{{ redmine_base_dir }}'
 
@@ -38,8 +38,23 @@
   become_user: '{{ redmine_user }}'
   ignore_errors: yes
 
+
+##
+# log directory
+# remove default log directory and replace it with symlink
+- name: remove default log directory log directory
+  file: path='{{ redmine_base_dir }}/log'
+        state=absent
+
+- name: add log symlink
+  file: src='{{ redmine_log_dir }}'
+        path='{{ redmine_base_dir }}/log'
+        state=link
+        owner={{ redmine_user }} group={{ redmine_group }}
+
+
 # this is needed for bundler task
-- name: redmine - add database config
+- name: add database config
   template:
     src: database.yml
     dest: "{{ redmine_base_dir }}/config/database.yml"
@@ -47,7 +62,7 @@
     group: '{{ redmine_group }}'
 
 # additional gems
-- name: redmine - add Gemfile.local
+- name: add Gemfile.local
   template:
     src: Gemfile.local
     dest: "{{ redmine_base_dir }}/Gemfile.local"
@@ -56,7 +71,7 @@
 
 
 # incoming email scheduler
-- name: redmine - add configuration.yml
+- name: add configuration.yml
   template:
     src: configuration.yml
     dest: "{{ redmine_base_dir }}/config/configuration.yml"
@@ -65,7 +80,7 @@
 
 
 # incoming email scheduler
-- name: redmine - add scheduler initializer for incoming emails
+- name: add scheduler initializer for incoming emails
   template:
     src: incoming_email_initializer.rb
     dest: "{{ redmine_base_dir }}/config/initializers/incoming_email.rb"
@@ -73,16 +88,7 @@
     group: '{{ redmine_group }}'
 
 
-#- name: bundle install
-#  bundler: state=present
-#           exclude_groups=development,test
-#           chdir={{ redmine_base_dir }}
-#           gem_path={{ redmine_user_home_dir }}/vendor/bundle/
-#  become: yes
-#  become_user: '{{ redmine_user }}'
-
-
-- name: redmine - bundle install
+- name: bundle install
   bundler: state=present
            exclude_groups=development,test
            chdir={{ redmine_base_dir }}
@@ -91,7 +97,7 @@
   become_user: '{{ redmine_user }}'
 
 
-- name: redmine - run db:migrate
+- name: run db:migrate
   command: >
     bundle exec rake db:migrate
     chdir=/srv/redmine
@@ -101,7 +107,7 @@
   become_user: redmine
 
 
-- name: redmine - load database default data set
+- name: load database default data set
   command: >
     bundle exec rake redmine:load_default_data RAILS_ENV=production REDMINE_LANG=en
     chdir=/srv/redmine
@@ -113,7 +119,7 @@
   ignore_errors: yes
 
 
-- name: redmine - generate secret_token
+- name: generate secret_token
   command: >
     bundle exec rake generate_secret_token
     chdir=/srv/redmine
@@ -123,11 +129,40 @@
   become_user: '{{ redmine_user }}'
 
 
-- name: redmine - add supervisord config
+# get redmine_sidekiq
+- name: get redmine_sidekiq from github
+  git: repo=https://github.com/ogom/redmine_sidekiq.git
+        dest='{{ redmine_base_dir }}/plugins/redmine_sidekiq'
+        version=master
+        force=yes
+  become: yes
+  become_user: '{{ redmine_user }}'
+
+
+# sidekiq
+- name: add sidekiq config
+  template:
+    src: sidekiq.yml
+    dest: "{{ redmine_base_dir }}/config/sidekiq.yml"
+    owner: '{{ redmine_user }}'
+    group: '{{ redmine_group }}'
+
+
+- name: run db:migrate (redmine_sidekiq)
+  command: >
+    bundle exec rake redmine:plugins:migrate RAILS_ENV=production NAME=redmine_sidekiq
+    chdir=/srv/redmine
+  environment:
+      RAILS_ENV: production
+      NAME: redmine_sidekiq
+  become: yes
+  become_user: '{{ redmine_user }}'
+
+
+- name: add supervisord config
   template: src=redmine.supervisord.conf
             dest=/etc/supervisor/conf.d/redmine.supervised.conf
+  notify: restart redmine
 
-
-- name: redmine - restart supervisord processes
-  supervisorctl: name=redmine state=restarted
-  ignore_errors: yes
+- name: enable supervisord config (redmine)
+  supervisorctl: name='redmine:' state=present
